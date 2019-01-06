@@ -1,1 +1,25 @@
-# monte-carlo
+# Inference statistics using simulation methods
+
+We have constructed two non-parametric tests as the means of comparing observations from two separate groups (e.g. a control and test group). They act as substitutes to the frequently used t-test which suffers from:
+1. The t-test resulting value changes if we are looking at f(X) and f(Y) instead of X and Y for a monotone transformation
+f. Assumptions of the t-test (normality) can only be fulfilled for one specific transformation and we would have to find this transformation (if it exists) and then apply the t-test.
+2. The results of t-test can change drastically in the presence of an outlying observation.
+
+However, even though our non-parametric methods are insensitive to monotone transformations of the data and less sensitive to grossly incorrect values / outliers, if data are perfectly normal, efficiency is only 3π ≈ 95% compared to t-test -  of course, for slight deviations from normality, efficiency can easily be greater than for t-test.
+
+## Monte Carlo permutation test
+### Explanation in layman terms
+Assume we have observations (e.g. conversion rates) from a test and a control group and we are interested in determining if there is a statistically significant between the average conversion rate between the two groups. We firstly compute the observed difference between the two average conversion rates (call it T_observed) and then we concatenate the observations from the two groups in a single vector. For a specified number of iterations (e.g. 100,000) we randomly permute those observations and calculate the difference in the average conversion rates of the (now randomly assigned values) between the test and control group. This will give us 100,000 different T values, which we compare to our T_observed to compute the fraction of times the random difference between the average conversion rates between the control and test groups are larger than the observed value T_observed. If this fraction is a large number, it means that the conversion rates we observed in the experiment are not significantly different than random luck so the experiment did not have a statistically significant effect.
+
+### Explanation in a bit more formal terms
+Suppose Xi ∼ F(X), i = 1, ..., n and Yj ∼ F(Y), j = 1, ..., m are independent samples. We want to test H0: F(X) = F(Y) versus H1: F(X) ≠ F(Y). Let X = (X1, ..., Xn) and Y = (Y1, ..., Yn) and Z = (X, Y) concatenated. Let N = n + m. Denote by Z(1), ..., Z(n) the order statistics of Z, i.e. with Z(i) ≤ Z(i+1). Choose a test statistic T(Z) you expect to be sensitive to differences in F(X) and FY, for example in our application we choose the difference of means in the two groups. Under H0 we are equally likely to see Z1, ..., ZN in any order. Our test statistic T(Z) has some distribution under the null. The p-value is p = P(T(Z) > Tobs) (any conditioning implied). We may be unable to compute p (if the distribution of T(Z) under the null is not simple). However we may be able to simulate samples from the null. In a Monte Carlo test we simulate T(Z) under the null and estimate p as the proportion of sampled T exceeding Tobs. The simulations are created by sampling uniformly without replacement vector Z.
+
+## Monte Carlo Wilcoxon (permutation) test
+### Explanation in layman terms
+Assume we have the same scenario as above with conversion rates between the test and control group and we have concatenated the observations in a single vector. Now, we rank the observed conversion rates from smaller to larger* and calculate the sum of ranks in the control group (call it W_observed) - you will notice that we have thrown away the actual values of the conversion rates and we only care about their ranking. In this scenario, for a given number of iterations, e.g. 100,000, we randomly permute the ranks of the values and recalculate the sum of ranks of the control group (call it W_random). If the fraction of times W_random is larger than W_observed is significantly large, then the experiment did not have any effect - note you can reverse the groups and the logic so you are summing the ranks of the test group instead but the results will follow the same patterns.
+
+* *Any ties of observations with equal conversion rates are broken by giving both their average rank.
+### Explanation in a bit more formal terms
+This is actually a permutation tests which makes use of  a particular choice of test statistic - the tests statistic is a function of the ranking of the values in the data. By throwing out the values and basing the test on rank alone
+we get a test that give the same result for any monotone transformation of the data. The test is also relatively insensitive to outliers. This is the same sort of robustness we see in the median. You can think of this as a two sample test for location. Given X ∼ F and Y − ∆ ∼ F with F, ∆ is unknown and known as the location shift. The null hypothesis is H0 : ∆ = 0
+and let Rk,for k = 1 . . . , n+m be the ranks of the combined sample Z = (X, Y). The Wilcoxon test statistic is defined as W=Σ(Ri) from i=n+1 to i=n+m. We compute the p-value using a Monte Carlo permutation test with test statistic T(Z) = W(Z).
